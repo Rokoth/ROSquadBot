@@ -3,7 +3,9 @@
     public enum RoleEnum
     {
         administrator,
-        moderator,
+        district_commander,
+        city_commander,
+        squaddie,
         user
     }
     

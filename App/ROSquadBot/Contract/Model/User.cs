@@ -12,8 +12,7 @@ namespace ROTGBot.Contract.Model
 
         public List<RoleEnum> Roles { get; set; } = [];
 
-        public bool IsAdmin => Roles.Contains(RoleEnum.administrator);
-        public bool IsModerator => Roles.Contains(RoleEnum.moderator);
+        public bool IsAdmin => Roles.Contains(RoleEnum.administrator);        
 
         public DateTime LastSendDate { get; set; }
     }

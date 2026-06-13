@@ -85,23 +85,6 @@ namespace ROTGBot.Service
             return roles;
         }
 
-        public async Task<IEnumerable<Contract.Model.User>> GetNotifyModerators(CancellationToken token)
-        {
-            var result = await _userRepo.GetAsync(new Filter<Db.Model.User>()
-            {
-                Selector = s => !s.IsDeleted && s.IsNotify
-            }, token);
-
-            var users = new List<Contract.Model.User>();
-
-            foreach(var res in result)
-            {
-                users.Add(await Map(res, token));
-            }
-
-            return users.Where(s => s.IsModerator);
-        }
-
         public async Task SetRole(string login, RoleEnum role, CancellationToken token)
         {
             var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
