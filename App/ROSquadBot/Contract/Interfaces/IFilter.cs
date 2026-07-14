@@ -1,18 +1,21 @@
-﻿using ROTGBot.Contract.Filters;
-using ROTGBot.Contract.Model;
+﻿using ROTGBot.Contract.Model;
 
-namespace ROTGBot.Contract.Interfaces
+namespace ROSquadBot.Contract.Interfaces
 {
+    /// <summary>
+    /// Интерфейс фильтра получения списка сущностей в репозитории
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public interface IFilter<T> where T : Entity
     {
         /// <summary>
         /// Страница
         /// </summary>
-        int? Page { get; }
+        int Page { get; }
         /// <summary>
         /// Размер
         /// </summary>
-        int? Size { get; }
+        int Size { get; }
         /// <summary>
         /// Поле сортировки
         /// </summary>

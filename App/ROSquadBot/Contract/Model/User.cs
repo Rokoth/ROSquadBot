@@ -8,7 +8,8 @@ namespace ROTGBot.Contract.Model
         public string? Description { get; set; }       
         public string? TGLogin { get; set; }        
         public bool IsNotify { get; set; }       
-        public long ChatId { get; set; }
+        public long ChatId { get; set; }        
+        public int Number { get; set; }
 
         public List<RoleEnum> Roles { get; set; } = [];
 

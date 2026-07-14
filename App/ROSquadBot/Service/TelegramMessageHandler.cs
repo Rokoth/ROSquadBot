@@ -21,6 +21,25 @@ namespace ROTGBot.Service
 
         private readonly int TimeoutSpan = 10;
 
+        private readonly Dictionary<CommandType, RoleEnum[]> commandRoles = new Dictionary<CommandType, RoleEnum[]>()
+        {
+            { CommandType.AddAdministrator, new RoleEnum[]{ RoleEnum.administrator } },
+            { CommandType.AddAdministratorResponse, new RoleEnum[]{ RoleEnum.administrator } },
+            { CommandType.AddCommander, new RoleEnum[]{ RoleEnum.administrator } },
+            { CommandType.AddCommanderResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander } },
+            { CommandType.AddDistrictCommander, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander } },
+            { CommandType.AddDistrictCommanderResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander } },
+            { CommandType.AddSquaddie, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.AddSquaddieResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.AddSquaddieDecline, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.ViewDemands, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.ViewDemandsDecline, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.ViewDemandsResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.ViewUserRights, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.ViewUserRightsDecline, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.ViewUserRightsResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } }
+        };
+
         public TelegramMessageHandler(
             ILogger<TelegramMessageHandler> logger,
             IUserDataService userDataService,
@@ -70,11 +89,18 @@ namespace ROTGBot.Service
             }
 
             var tgUser = message.From;
-
-            var user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", message.Chat.Id, cancellationToken);
+            var user = await _userDataService.GetUserByTGId(tgUser.Id, cancellationToken);
+            //var user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", message.Chat.Id, cancellationToken);
 
             if (user == null)
+            {
+                user = await _userDataService.AddOrUpdateUser(tgUser.Id, tgUser.Username ?? "Аноним", $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", message.Chat.Id, cancellationToken);
+            }
+
+            if (user == null)
+            {
                 return;
+            }
 
             if (message.Text == "/start")
             {
@@ -103,11 +129,11 @@ namespace ROTGBot.Service
 
             if (callbackQuery.Message?.Chat?.Type != "private")
             {
-                user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", null, token);
+                user = await _userDataService.AddOrUpdateUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", null, token);
             }
             else
             {
-                user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", chatId.Value, token);
+                user = await _userDataService.AddOrUpdateUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", chatId.Value, token);
             }
             if (user == null)
             {
@@ -115,7 +141,7 @@ namespace ROTGBot.Service
             }
             var data = callbackQuery.Data;
             if (data == null) return false;
-            var result = await HandleData(user.ChatId, user, data, token);
+            var result = await HandleData(user.ChatId, user, data, [], token);
             await client.AnswerCallbackQueryAsync(new AnswerCallbackQueryArgs(callbackQuery.Id), token: token);
             return result;
         }
@@ -124,6 +150,7 @@ namespace ROTGBot.Service
             long chatId,
             Contract.Model.User user,
             string? dataReq,
+            string[] args,
             CancellationToken token)
         {
             if (dataReq == null || dataReq == "-") return false;
@@ -131,11 +158,43 @@ namespace ROTGBot.Service
             var roles = user.Roles;
             var userId = user.Id;
 
-            if (!await CheckRights(user, chatId, RoleEnum.user, token))
+            if(!Enum.TryParse(dataReq, out CommandType commandType))
+            {
+                return false;
+            }
+
+            if (!await CheckRights(user, chatId, commandType, token))
                 return false;
 
-            switch (dataReq)
+            switch (commandType)
             {
+                case CommandType.ViewDemands:
+                    await ViewDemandsSendRequest(chatId, token);
+                    break;
+                case CommandType.ViewDemandsResponse:
+                    await ViewDemandsHandleResponse(chatId, args, token);
+                    break;
+                case CommandType.ViewDemandsDecline:
+                    await ViewDemandsDecline(chatId, args, token);
+                    break;
+                case CommandType.AddSquaddie:
+                    await AddSquaddieSendRequest(chatId, token);
+                    break;
+                case CommandType.AddSquaddieResponse:
+                    await AddSquaddieHandleResponse(chatId, args, token);
+                    break;
+                case CommandType.AddSquaddieDecline:
+                    await AddSquaddieDecline(chatId, args, token);
+                    break;
+                case CommandType.ViewUserRights:
+                    await ViewUserRightsSendRequest(chatId, token);
+                    break;
+                case CommandType.ViewUserRightsResponse:
+                    await ViewUserRightsHandleResponse(chatId, args, token);
+                    break;
+                case CommandType.ViewUserRightsDecline:
+                    await ViewUserRightsDecline(chatId, args, token);
+                    break;
                 default:
                     await SendUserNotImplemented(chatId, token);
                     break;
@@ -143,10 +202,75 @@ namespace ROTGBot.Service
             return true;
         }
 
+        private async Task ViewUserRightsDecline(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task ViewUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task ViewUserRightsSendRequest(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task ViewDemandsDecline(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task ViewDemandsHandleResponse(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task ViewDemandsSendRequest(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task AddSquaddieDecline(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task AddSquaddieHandleResponse(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task AddSquaddieSendRequest(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номера кандидатов для добавления в дружину", GetDeclineReplyMarkUp(), token);
+        }
+
+        private static InlineKeyboardMarkup GetDeclineReplyMarkUp()
+        {           
+            return new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        GetDeclineButton()
+                    }
+                });
+        }
+
+        private static InlineKeyboardButton GetDeclineButton()
+        {
+            return new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineCurrentTask"
+            };
+        }
+
         private async Task<bool> CheckRights(
             Contract.Model.User user,
             long chatId,
-            RoleEnum role,           
+            CommandType role,           
             CancellationToken token)
         {                     
             if (!user.Roles.Contains(role))
@@ -401,7 +525,7 @@ namespace ROTGBot.Service
                 }
             }
 
-            if (type == "user")
+            if (type == "squaddie")
             {
                 await client.SendMessageAsync(chatId, "Панель пользователя",
                          replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)),  token);

@@ -61,7 +61,7 @@ namespace XUnitTests
 
             var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
 
-            var result = await buttonsService.GetOrAddUser(1, "test","test", 1, new CancellationToken());
+            var result = await buttonsService.AddOrUpdateUser(1, "test","test", 1, new CancellationToken());
 
             Assert.NotNull(result);
             _repoMock.Verify(m => m.AddAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);

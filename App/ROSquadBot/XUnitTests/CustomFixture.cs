@@ -34,11 +34,7 @@ namespace XUnitTests
             serviceCollection.AddDbContext<ROTGBot.Db.Context.DbPgContext>(opt => opt.UseNpgsql(ConnectionString));
             serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.User>, Repository<ROTGBot.Db.Model.User>>();
             serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.Role>, Repository<ROTGBot.Db.Model.Role>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.UserRole>, Repository<ROTGBot.Db.Model.UserRole>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.News>, Repository<ROTGBot.Db.Model.News>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.NewsMessage>, Repository<ROTGBot.Db.Model.NewsMessage>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.Groups>, Repository<ROTGBot.Db.Model.Groups>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.NewsButton>, Repository<ROTGBot.Db.Model.NewsButton>>();
+            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.UserRole>, Repository<ROTGBot.Db.Model.UserRole>>();            
             serviceCollection.AddDataServices();
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
