@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ROTGBot.Db.Context;
+using ROTGBot.Db.Model;
 
-namespace ROTGBot
+namespace ROSquadBot
 {
     public class ConfigDbProvider(Action<DbContextOptionsBuilder> options) : ConfigurationProvider
     {
@@ -9,18 +10,20 @@ namespace ROTGBot
 
         public override void Load()
         {
-            var builder = new DbContextOptionsBuilder<DbPgContext>();
+            using var context = GetContext();
+            AddData(context);
+        }
+
+        private DbPgContext GetContext() => new(GetBuilder(new DbContextOptionsBuilder<DbPgContext>()).Options);
+
+        private void AddData(DbPgContext context) => GetSettings(context).ForEach(item => Data.Add(item.ParamName, item.ParamValue));
+
+        private static List<Settings> GetSettings(DbPgContext context) => [.. context.Settings.AsNoTracking()];
+
+        private DbContextOptionsBuilder<DbPgContext> GetBuilder(DbContextOptionsBuilder<DbPgContext> builder)
+        {
             _options(builder);
-
-            using var context = new DbPgContext(builder.Options);
-            var items = context.Settings
-                .AsNoTracking()
-                .ToList();
-
-            foreach (var item in items)
-            {
-                Data.Add(item.ParamName, item.ParamValue);
-            }
-        }                
+            return builder;
+        }
     }
 }

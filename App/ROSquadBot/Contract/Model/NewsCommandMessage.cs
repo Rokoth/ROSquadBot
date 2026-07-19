@@ -1,6 +1,6 @@
 ﻿namespace ROTGBot.Contract.Model
 {
-    public class NewsMessage : Entity
+    public class NewsCommandMessage : Entity
     {       
         public Guid NewsId { get; set; }      
         public long TGMessageId { get; set; }

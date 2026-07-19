@@ -157,7 +157,7 @@ namespace ROTGBot.Service
             return true;
         }
                 
-        private async Task SendForwardMessageTitle( News userNews, CancellationToken token)
+        private async Task SendForwardMessageTitle( NewsCommand userNews, CancellationToken token)
         {
             var user = await _userDataService.GetUser(userNews.UserId, token);
             var tgLogin = !string.IsNullOrEmpty(user.TGLogin) ? $"@{user.TGLogin}" : "Не определен";
@@ -165,7 +165,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(userNews.GroupId.Value, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" от пользователя {userName} (логин: {tgLogin})", (int?)userNews.ThreadId,  token);
         }
                 
-        private static List<ButtonSetting> ParseButtonsSettings(IEnumerable<NewsMessage> messages)
+        private static List<ButtonSetting> ParseButtonsSettings(IEnumerable<NewsCommandMessage> messages)
         {
             var buttons = new List<string>();
 
@@ -222,7 +222,7 @@ namespace ROTGBot.Service
             return numbers;
         }
 
-        private static ButtonSetting? ParseButtonsSettings(NewsMessage? message)
+        private static ButtonSetting? ParseButtonsSettings(NewsCommandMessage? message)
         {
 
             var value = message?.TextValue?.Trim();
