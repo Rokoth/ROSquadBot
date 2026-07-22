@@ -1,5 +1,4 @@
-﻿using ROTGBot.Contract.Filters;
-using ROTGBot.Contract.Interfaces;
+﻿using ROTGBot.Contract.Interfaces;
 using System;
 
 namespace ROTGBot.Contract.Model

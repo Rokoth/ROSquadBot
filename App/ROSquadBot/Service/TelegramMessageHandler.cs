@@ -214,7 +214,7 @@ namespace ROTGBot.Service
 
         private async Task ViewUserRightsSendRequest(long chatId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            await client.SendMessageAsync(chatId, "Отправьте номер или логин пользователя для просмотра его прав, либо Отмена для отмены действия", GetDeclineReplyMarkUp(), token);
         }
 
         private async Task ViewDemandsDecline(long chatId, string[] args, CancellationToken token)
