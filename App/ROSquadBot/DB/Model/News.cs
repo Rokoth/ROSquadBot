@@ -1,4 +1,5 @@
-﻿using ROTGBot.Db.Attributes;
+﻿using ROTGBot.Contract.Model;
+using ROTGBot.Db.Attributes;
 
 namespace ROTGBot.Db.Model
 {
