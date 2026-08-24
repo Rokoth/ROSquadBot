@@ -7,6 +7,7 @@ using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ROTGBot.Service
 {
@@ -17,6 +18,7 @@ namespace ROTGBot.Service
         private readonly ILogger<TelegramMessageHandler> _logger;
                 
         private readonly IUserDataService _userDataService;
+        private readonly ICommandDataService _commandDataService;
         private readonly ITelegramBotWrapper client;
 
         private readonly int TimeoutSpan = 10;
@@ -30,26 +32,44 @@ namespace ROTGBot.Service
             { CommandType.AddDistrictCommander, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander } },
             { CommandType.AddDistrictCommanderResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander } },
             { CommandType.AddSquaddie, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
-            { CommandType.AddSquaddieResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
-            { CommandType.AddSquaddieDecline, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
-            { CommandType.ViewDemands, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
-            { CommandType.ViewDemandsDecline, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.AddSquaddieResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },            
+            { CommandType.ViewDemands, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },           
             { CommandType.ViewDemandsResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
             { CommandType.ViewUserRights, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
-            { CommandType.ViewUserRightsDecline, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
-            { CommandType.ViewUserRightsResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } }
+            { CommandType.DeclineCurrentTask, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander, RoleEnum.squaddie } },
+            { CommandType.ViewUserRightsResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.AddUserRights, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.DeleteUserRights, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.AddUserRightsResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
+            { CommandType.DeleteUserRightsResponse, new RoleEnum[]{ RoleEnum.administrator, RoleEnum.city_commander, RoleEnum.district_commander } },
         };
+
+        private readonly List<CommandType> initialCommands =
+            [                
+                CommandType.AddSquaddie, 
+                CommandType.ViewUserRights, 
+                CommandType.AddUserRights,
+                CommandType.DeleteUserRights,
+                CommandType.AddCommander
+            ];
+
+        private readonly List<CommandType> singleCommands =
+            [
+                CommandType.ViewDemands
+            ];
 
         public TelegramMessageHandler(
             ILogger<TelegramMessageHandler> logger,
             IUserDataService userDataService,
             IConfiguration configuration,
-            ITelegramBotWrapper wrapper)
+            ITelegramBotWrapper wrapper,
+            ICommandDataService commandDataService)
         {
             _logger = logger;
             _userDataService = userDataService;
             var botSettings = configuration.GetSection("BotSettings").Get<BotSettings>();
             client = wrapper;
+            _commandDataService = commandDataService;
         }
 
         public async Task HandleUpdates(IEnumerable<Update> updates, CancellationToken cancellationToken)
@@ -110,6 +130,10 @@ namespace ROTGBot.Service
             {
                 await SendTestConnectionMessage(message, string.Format(HelloMessage, user.Name), cancellationToken);
             }
+            else
+            {
+                var result = await HandleData(user.ChatId, user, null, message.Text, cancellationToken);
+            }
         }
 
         private async Task<bool> HandleCallback(CallbackQuery? callbackQuery, CancellationToken token)
@@ -141,7 +165,7 @@ namespace ROTGBot.Service
             }
             var data = callbackQuery.Data;
             if (data == null) return false;
-            var result = await HandleData(user.ChatId, user, data, [], token);
+            var result = await HandleData(user.ChatId, user, data, "", token);
             await client.AnswerCallbackQueryAsync(new AnswerCallbackQueryArgs(callbackQuery.Id), token: token);
             return result;
         }
@@ -150,57 +174,120 @@ namespace ROTGBot.Service
             long chatId,
             Contract.Model.User user,
             string? dataReq,
-            string[] args,
+            string data,
             CancellationToken token)
         {
-            if (dataReq == null || dataReq == "-") return false;
-
             var roles = user.Roles;
             var userId = user.Id;
+            Command? command = null;
 
-            if(!Enum.TryParse(dataReq, out CommandType commandType))
+            if (dataReq == null || dataReq == "-")
+            {
+                command = await _commandDataService.GetCurrentCommand(user, token);
+                if(command == null)
+                {
+                    return false;
+                }
+                dataReq = Enum.GetName((CommandType)command.CommandType) + "Response";
+            }           
+
+            if(!Enum.TryParse(dataReq, out CommandType commandType) || !await CheckRights(user, chatId, commandType, token))
             {
                 return false;
             }
 
-            if (!await CheckRights(user, chatId, commandType, token))
-                return false;
-
-            switch (commandType)
+            if(initialCommands.Contains(commandType))
             {
-                case CommandType.ViewDemands:
-                    await ViewDemandsSendRequest(chatId, token);
-                    break;
-                case CommandType.ViewDemandsResponse:
-                    await ViewDemandsHandleResponse(chatId, args, token);
-                    break;
-                case CommandType.ViewDemandsDecline:
-                    await ViewDemandsDecline(chatId, args, token);
-                    break;
-                case CommandType.AddSquaddie:
-                    await AddSquaddieSendRequest(chatId, token);
-                    break;
-                case CommandType.AddSquaddieResponse:
-                    await AddSquaddieHandleResponse(chatId, args, token);
-                    break;
-                case CommandType.AddSquaddieDecline:
-                    await AddSquaddieDecline(chatId, args, token);
-                    break;
-                case CommandType.ViewUserRights:
-                    await ViewUserRightsSendRequest(chatId, token);
-                    break;
-                case CommandType.ViewUserRightsResponse:
-                    await ViewUserRightsHandleResponse(chatId, args, token);
-                    break;
-                case CommandType.ViewUserRightsDecline:
-                    await ViewUserRightsDecline(chatId, args, token);
-                    break;
-                default:
-                    await SendUserNotImplemented(chatId, token);
-                    break;
+                command = await _commandDataService.AddCommand(user, commandType, token);
             }
+
+            string[] args = [];
+
+            if (command == null)
+            {
+                if(!singleCommands.Contains(commandType))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                args = await _commandDataService.GetMessages(command.Id);
+                args = [.. (args ?? []), data];
+            }
+
+                switch (commandType)
+                {
+                    ///ViewDemands
+                    case CommandType.ViewDemands:
+                        await ViewDemandsSendRequest(chatId, token);
+                        break;                    
+                    ///AddSquaddie
+                    case CommandType.AddSquaddie:
+                        await AddSquaddieSendRequest(chatId, token);
+                        break;
+                    case CommandType.AddSquaddieResponse:
+                        await AddSquaddieHandleResponse(chatId, args, token);
+                        break;
+                    ///ViewUserRights
+                    case CommandType.ViewUserRights:
+                        await ViewUserRightsSendRequest(chatId, token);
+                        break;
+                    case CommandType.ViewUserRightsResponse:
+                        await ViewUserRightsHandleResponse(chatId, args, token);
+                        break;
+                    ///AddUserRights
+                    case CommandType.AddUserRights:
+                        await AddUserRightsSendRequest(chatId, token);
+                        break;
+                    case CommandType.AddUserRightsResponse:
+                        await AddUserRightsHandleResponse(chatId, args, token);
+                        break;
+                    ///DeleteUserRights
+                    case CommandType.DeleteUserRights:
+                        await DeleteUserRightsSendRequest(chatId, token);
+                        break;
+                    case CommandType.DeleteUserRightsResponse:
+                        await DeleteUserRightsHandleResponse(chatId, args, token);
+                        break;
+                    ///DeclineCurrentTask
+                    case CommandType.DeclineCurrentTask:
+                        await DeclineCurrentTask(chatId, token);
+                        break;
+                    ///SendUserNotImplemented
+                    default:
+                        await SendUserNotImplemented(chatId, token);
+                        break;
+                }
             return true;
         }
+
+        private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task DeleteUserRightsSendRequest(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task DeclineCurrentTask(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task AddUserRightsDecline(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task AddUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        
 
         private async Task ViewUserRightsDecline(long chatId, string[] args, CancellationToken token)
         {
@@ -215,21 +302,12 @@ namespace ROTGBot.Service
         private async Task ViewUserRightsSendRequest(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Отправьте номер или логин пользователя для просмотра его прав, либо Отмена для отмены действия", GetDeclineReplyMarkUp(), token);
-        }
-
-        private async Task ViewDemandsDecline(long chatId, string[] args, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task ViewDemandsHandleResponse(long chatId, string[] args, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
+        }        
 
         private async Task ViewDemandsSendRequest(long chatId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var demands = await _userDataService.GetDemandUsers(token);
+            await client.SendMessageAsync(chatId, $"Кандидаты на добавление в дружину:\r\n{string.Join("\r\n", demands.Select(s => $"{s.Number}. {s.Name} ({s.TGLogin})"))}", token);
         }
 
         private async Task AddSquaddieDecline(long chatId, string[] args, CancellationToken token)
@@ -245,6 +323,12 @@ namespace ROTGBot.Service
         private async Task AddSquaddieSendRequest(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номера кандидатов для добавления в дружину", GetDeclineReplyMarkUp(), token);
+        }
+
+        private async Task AddUserRightsSendRequest(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и права, которые ему надо добавить из списка: " +
+                "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня) для добавления прав", GetDeclineReplyMarkUp(), token);
         }
 
         private static InlineKeyboardMarkup GetDeclineReplyMarkUp()
@@ -270,10 +354,17 @@ namespace ROTGBot.Service
         private async Task<bool> CheckRights(
             Contract.Model.User user,
             long chatId,
-            CommandType role,           
+            CommandType commandType,           
             CancellationToken token)
-        {                     
-            if (!user.Roles.Contains(role))
+        {
+            if(!commandRoles.TryGetValue(commandType, out var enableRoles))
+            {
+                _logger.LogError($"Не заданы права для команды '{Enum.GetName(commandType)}'");
+                await SendUserHasNoRights(chatId, token);
+                return false;
+            }
+
+            if (!user.Roles.Any(s => enableRoles.Contains(s)))
             {
                 await SendUserHasNoRights(chatId, token);
                 return false;

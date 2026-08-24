@@ -5,6 +5,7 @@ using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
 {
+
     public class UserDataService(IRepository<Db.Model.User> userRepo,
         IRepository<Role> roleRepo,
         IRepository<UserRole> userRoleRepo) : IUserDataService
@@ -157,14 +158,15 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        public async Task<IEnumerable<Contract.Model.User>> GetUserDemands(CancellationToken token)
+
+        public async Task<List<Contract.Model.User>> GetDemandUsers(CancellationToken token)
         {
-            List<Contract.Model.User> result = new List<Contract.Model.User>();
+            List<Contract.Model.User> result = [];
             var users = await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
                 Selector = s => !s.IsDeleted
             }, token);
-            foreach(var item in users)
+            foreach (var item in users)
             {
                 var roles = await GetUserRoles(item.Id, token);
                 if (roles.Length != 1 || roles.First() != "user")

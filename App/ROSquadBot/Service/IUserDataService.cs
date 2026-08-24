@@ -9,5 +9,6 @@ namespace ROTGBot.Service
         Task<bool> SwitchUserNotify(Guid userId, CancellationToken token);      
         Task<Contract.Model.User?> GetUser(Guid userId, CancellationToken token);
         Task<User?> GetUserByTGId(long id, CancellationToken cancellationToken);
+        Task<List<Contract.Model.User>> GetDemandUsers(CancellationToken token);
     }
 }

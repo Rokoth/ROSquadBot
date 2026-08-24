@@ -7,7 +7,8 @@ namespace ROTGBot.Service
         public static IServiceCollection AddDataServices(this IServiceCollection services)
         {
             services.AddScoped<IUserDataService, UserDataService>();
-            
+            services.AddScoped<ICommandDataService, CommandDataService>();
+
             services.AddScoped<ITelegramMainService, TelegramMainService>();
             services.AddScoped<ITelegramMessageHandler, TelegramMessageHandler>();
             services.AddScoped<ITelegramBotWrapper, TelegramBotWrapper>();

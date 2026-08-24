@@ -18,13 +18,16 @@
         AddSquaddieResponse,
         AddCommanderResponse,
         AddDistrictCommanderResponse,
-        AddAdministratorResponse,
-        AddSquaddieDecline,
+        AddAdministratorResponse,      
         ViewDemands,
-        ViewDemandsResponse,
-        ViewDemandsDecline,
+        ViewDemandsResponse,        
         ViewUserRights,
-        ViewUserRightsResponse,
-        ViewUserRightsDecline
+        ViewUserRightsResponse,        
+        AddUserRights,
+        AddUserRightsResponse,
+        DeleteUserRights,
+        DeleteUserRightsResponse,
+        
+        DeclineCurrentTask,
     }
 }
