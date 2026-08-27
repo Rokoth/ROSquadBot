@@ -227,14 +227,14 @@ namespace ROTGBot.Service
                         await AddSquaddieSendRequest(chatId, token);
                         break;
                     case CommandType.AddSquaddieResponse:
-                        await AddSquaddieHandleResponse(chatId, args, token);
+                        await AddSquaddieHandleResponse(chatId, args, userId, token);
                         break;
                     ///ViewUserRights
                     case CommandType.ViewUserRights:
                         await ViewUserRightsSendRequest(chatId, token);
                         break;
                     case CommandType.ViewUserRightsResponse:
-                        await ViewUserRightsHandleResponse(chatId, args, token);
+                        await ViewUserRightsHandleResponse(chatId, args, userId, token);
                         break;
                     ///AddUserRights
                     case CommandType.AddUserRights:
@@ -269,7 +269,8 @@ namespace ROTGBot.Service
 
         private async Task DeleteUserRightsSendRequest(long chatId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и роль, которые ему надо удалить из списка: " +
+                "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня)", GetDeclineReplyMarkUp(), token);
         }
 
         private async Task DeclineCurrentTask(long chatId, CancellationToken token)
@@ -277,26 +278,27 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task AddUserRightsDecline(long chatId, string[] args, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task AddUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
         
 
-        private async Task ViewUserRightsDecline(long chatId, string[] args, CancellationToken token)
+        private async Task ViewUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
         {
-            throw new NotImplementedException();
-        }
-
-        private async Task ViewUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
-        {
-            throw new NotImplementedException();
+            var data = args.Where(s => !string.IsNullOrEmpty(s));
+            if(!data.Any())
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина или номера. Отправьте номер или логин пользователя для просмотра его прав, либо Отмена для отмены действия", GetDeclineReplyMarkUp(), token);
+                return;
+            }
+            foreach (var arg in args)
+            {
+                var user = await _userDataService.GetUserByNumberOrLogin(arg, token);
+                if(user == null)
+                {
+                    await client.SendMessageAsync(chatId, $"Пользователь {arg} не найден.", token);
+                    continue;
+                }
+                await client.SendMessageAsync(chatId, $"Пользователь {user.Number} : {user.Name} ({user.TGLogin}), права: {string.Join(", ", user.Roles.Select(s => Enum.GetName(s)))}.", token);
+            }
+            await _commandDataService.CloseCurrentCommand(userId, token);
         }
 
         private async Task ViewUserRightsSendRequest(long chatId, CancellationToken token)
@@ -315,9 +317,39 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task AddSquaddieHandleResponse(long chatId, string[] args, CancellationToken token)
+        private async Task AddSquaddieHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var users = await _userDataService.GetDemandUsers(token);
+            string response = string.Empty;
+            foreach(var arg in args)
+            {
+                var numbers = arg.Split(',', ';').Select(s => s.Trim());
+                foreach(var number in numbers)
+                {
+                    if(int.TryParse(number, out int intNumber))
+                    {
+                        var user = users.FirstOrDefault(s => s.Number == intNumber);
+                        if(user == null)
+                        {
+                            response += $"Не удалось добавить пользователя - не найдена заявка на добавление {number}";
+                        }
+                        else
+                        {
+                            await _userDataService.SetRole(user.Id, RoleEnum.squaddie, token);
+                        }
+                    }
+                    else
+                    {
+                        response += $"Не удалось добавить пользователя - некорректный номер {number}";
+                    }
+                }
+            }
+            if(response == string.Empty)
+            {
+                response += "Пользователи успешно добавлены в дружину";
+            }
+            await client.SendMessageAsync(chatId, response, token);
+            await _commandDataService.CloseCurrentCommand(userId, token);
         }
 
         private async Task AddSquaddieSendRequest(long chatId, CancellationToken token)
@@ -329,6 +361,49 @@ namespace ROTGBot.Service
         {
             await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и права, которые ему надо добавить из списка: " +
                 "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня) для добавления прав", GetDeclineReplyMarkUp(), token);
+        }
+
+        private async Task AddUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
+        {
+            var allRoles = Enum.GetNames<RoleEnum>();
+            var allArgs = args.Select(s => s.Split(',', ';')).SelectMany(s => s).Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+
+            if(allArgs.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и права, которые ему надо добавить из списка: " +
+                    "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня) для добавления прав", GetDeclineReplyMarkUp(), token);
+                return;
+            }
+
+            var userNumber = allArgs[0];
+            var user = await _userDataService.GetUserByNumberOrLogin(userNumber, token);
+            if(user == null)
+            {
+                await client.SendMessageAsync(chatId, $"Пользователь {userNumber} не найден, задание отменено", GetDeclineReplyMarkUp(), token);
+                return;
+            }
+
+            var toAddRoles = allArgs.Where(s => allRoles.Contains(s, StringComparer.InvariantCultureIgnoreCase));
+            if(!toAddRoles.Any())
+            {
+                await client.SendMessageAsync(chatId, $"Не отправлено ни одной роли, задание отменено", GetDeclineReplyMarkUp(), token);
+                return;
+            }
+
+            var userRolesNames = user.Roles.Select(s => Enum.GetName(s));
+            toAddRoles = toAddRoles.Where(s => !userRolesNames.Contains(s));
+
+            if (!toAddRoles.Any())
+            {
+                await client.SendMessageAsync(chatId, $"Указанные роли уже присвоены пользователю, задание отменено", GetDeclineReplyMarkUp(), token);
+                return;
+            }
+
+            foreach(var role in toAddRoles)
+            {
+                await _userDataService.SetRole(user.Id, Enum.Parse<RoleEnum>(role), token);
+            }
+            await client.SendMessageAsync(chatId, $"Роли успешно присвоены пользователю, задание отменено", GetDeclineReplyMarkUp(), token);
         }
 
         private static InlineKeyboardMarkup GetDeclineReplyMarkUp()

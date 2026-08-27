@@ -2,11 +2,11 @@
 {
     public enum RoleEnum
     {
-        administrator,
-        district_commander,
-        city_commander,
-        squaddie,
-        user
+        user    =  0,
+        squaddie =  1,
+        district_commander = 2,
+        city_commander  = 3,
+        administrator =  4,
     }
     
     public enum CommandType
@@ -26,8 +26,7 @@
         AddUserRights,
         AddUserRightsResponse,
         DeleteUserRights,
-        DeleteUserRightsResponse,
-        
+        DeleteUserRightsResponse,        
         DeclineCurrentTask,
     }
 }

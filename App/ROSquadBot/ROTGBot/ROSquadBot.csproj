@@ -33,7 +33,7 @@
     <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\Contract\ROSquadBot.Contract.csproj" />
     <ProjectReference Include="..\DB\ROSquadBot.DB.csproj" />
-    <ProjectReference Include="..\Service\Service.csproj" />
+    <ProjectReference Include="..\Service\ROTGBot.Service.csproj" />
   </ItemGroup>
 
   <ItemGroup>
