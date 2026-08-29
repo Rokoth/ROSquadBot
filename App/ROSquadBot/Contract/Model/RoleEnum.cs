@@ -28,5 +28,7 @@
         DeleteUserRights,
         DeleteUserRightsResponse,        
         DeclineCurrentTask,
+        BlockUser,
+        BlockUserResponse,
     }
 }

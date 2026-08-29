@@ -250,16 +250,33 @@ namespace ROTGBot.Service
                     case CommandType.DeleteUserRightsResponse:
                         await DeleteUserRightsHandleResponse(chatId, args, token);
                         break;
+                    ///DeleteUserRights
+                    case CommandType.BlockUser:
+                        await BlockUserSendRequest(chatId, token);
+                        break;
+                    case CommandType.BlockUserResponse:
+                        await BlockUserHandleResponse(chatId, args, token);
+                        break;
                     ///DeclineCurrentTask
                     case CommandType.DeclineCurrentTask:
-                        await DeclineCurrentTask(chatId, token);
-                        break;
+                            await DeclineCurrentTask(chatId, token);
+                            break;
                     ///SendUserNotImplemented
                     default:
                         await SendUserNotImplemented(chatId, token);
                         break;
                 }
             return true;
+        }
+
+        private async Task BlockUserHandleResponse(long chatId, string[] args, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task BlockUserSendRequest(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
