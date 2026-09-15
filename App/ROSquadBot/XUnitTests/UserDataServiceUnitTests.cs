@@ -69,6 +69,34 @@ namespace XUnitTests
             _repoMock.Verify(m => m.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// 0.0.4.2.2
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task SwitchUserNotify_Success_Async()
+        {
+            var _repoMock = new Mock<IRepository<User>>();
+            var _repoRoleMock = new Mock<IRepository<Role>>();
+            var _repouserRoleMock = new Mock<IRepository<UserRole>>();
+                       
+            var userGuid = Guid.NewGuid();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult(new User()
+                {
+                    Id = userGuid,
+                    IsDeleted = false,
+                    IsNotify = true,
+                    ChatId = 1
+                }));
+
+            var userDataService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
+            var result = await userDataService.SwitchUserNotify(Guid.NewGuid(), new CancellationToken());
+
+            Assert.False(result);
+        }
+
         private static List<Role> GetRoles(Filter<Role> f, Guid moderGuid, Guid userGuid)
         {
             var result = new List<Role>

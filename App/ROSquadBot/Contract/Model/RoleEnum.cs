@@ -30,5 +30,7 @@
         DeclineCurrentTask,
         BlockUser,
         BlockUserResponse,
+        UnBlockUser,
+        UnBlockUserResponse,
     }
 }

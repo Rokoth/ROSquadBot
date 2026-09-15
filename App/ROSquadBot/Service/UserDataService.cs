@@ -1,6 +1,7 @@
 ﻿using ROTGBot.Contract.Model;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
+using Telegram.BotAPI.AvailableTypes;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
@@ -125,15 +126,7 @@ namespace ROTGBot.Service
 
             if (user != null)
             {
-                var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
-
-                await _userRoleRepo.AddAsync(new UserRole()
-                {
-                    Id = Guid.NewGuid(),
-                    IsDeleted = false,
-                    RoleId = newRole.Id,
-                    UserId = user.Id
-                }, true, token);
+                await SetRole(user.Id, role, token);
             }
         }
 
@@ -181,6 +174,41 @@ namespace ROTGBot.Service
                 result.Add(res);
             }
             return result;
+        }
+
+        public async Task SetRole(Guid userId, RoleEnum role, CancellationToken token)
+        {
+            var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
+
+            await _userRoleRepo.AddAsync(new UserRole()
+            {
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                RoleId = newRole.Id,
+                UserId = userId
+            }, true, token);
+        }
+
+        public async Task<Contract.Model.User?> GetUserByNumberOrLogin(string login, CancellationToken token)
+        {
+            Db.Model.User? user = null;
+            if (int.TryParse(login, out int number))
+            {
+                user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+                {
+                    Selector = s => !s.IsDeleted && s.Number == number
+                }, token)).FirstOrDefault();
+            }
+            else
+            {
+                login = login.Replace("@", "");
+                user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+                {
+                    Selector = s => !s.IsDeleted && s.TGLogin == login
+                }, token)).FirstOrDefault();
+            }
+                
+            return await Map(user, token);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using Microsoft.Extensions.Logging;
+using System.Threading;
 using Telegram.BotAPI.AvailableMethods;
 
 namespace ROTGBot.Service
@@ -8,13 +9,16 @@ namespace ROTGBot.Service
                 
         private readonly ITelegramMessageHandler _telegramMessageHandler;
         private readonly ITelegramBotWrapper _client;
+        private readonly ILogger<TelegramMainService> _logger;
 
         public TelegramMainService(
             ITelegramMessageHandler telegramMessageHandler,
-            ITelegramBotWrapper client)
+            ITelegramBotWrapper client,
+            ILogger<TelegramMainService>  logger)
         {
             _telegramMessageHandler = telegramMessageHandler;
             _client = client;
+            _logger = logger;
         }
 
         public async Task<int> Execute(int offset)
@@ -31,10 +35,19 @@ namespace ROTGBot.Service
             return updates.Last().UpdateId + 1;
         }
 
-        public async Task SetCommands()
+        public async Task<bool> SetCommands()
         {
-            var cancellationToken = new CancellationTokenSource(60000).Token;
-            await _client.SetMyCommandsAsync(new SetMyCommandsArgs([new("start", "Начать работу")]), cancellationToken);
+            try
+            {
+                var cancellationToken = new CancellationTokenSource(60000).Token;
+                await _client.SetMyCommandsAsync(new SetMyCommandsArgs([new("start", "Начать работу")]), cancellationToken);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка SetCommands");
+                return false; 
+            }
         }
     }
 }

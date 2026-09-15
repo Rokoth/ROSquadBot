@@ -212,74 +212,91 @@ namespace ROTGBot.Service
             }
             else
             {
-                args = await _commandDataService.GetMessages(command.Id);
-                args = [.. (args ?? []), data];
+                await _commandDataService.AddMessage(command.Id, data, token);
+                args = await _commandDataService.GetMessages(command.Id);                
             }
 
-                switch (commandType)
-                {
-                    ///ViewDemands
-                    case CommandType.ViewDemands:
-                        await ViewDemandsSendRequest(chatId, token);
-                        break;                    
-                    ///AddSquaddie
-                    case CommandType.AddSquaddie:
-                        await AddSquaddieSendRequest(chatId, token);
-                        break;
-                    case CommandType.AddSquaddieResponse:
-                        await AddSquaddieHandleResponse(chatId, args, userId, token);
-                        break;
-                    ///ViewUserRights
-                    case CommandType.ViewUserRights:
-                        await ViewUserRightsSendRequest(chatId, token);
-                        break;
-                    case CommandType.ViewUserRightsResponse:
-                        await ViewUserRightsHandleResponse(chatId, args, userId, token);
-                        break;
-                    ///AddUserRights
-                    case CommandType.AddUserRights:
-                        await AddUserRightsSendRequest(chatId, token);
-                        break;
-                    case CommandType.AddUserRightsResponse:
-                        await AddUserRightsHandleResponse(chatId, args, token);
-                        break;
-                    ///DeleteUserRights
-                    case CommandType.DeleteUserRights:
-                        await DeleteUserRightsSendRequest(chatId, token);
-                        break;
-                    case CommandType.DeleteUserRightsResponse:
-                        await DeleteUserRightsHandleResponse(chatId, args, token);
-                        break;
-                    ///DeleteUserRights
-                    case CommandType.BlockUser:
-                        await BlockUserSendRequest(chatId, token);
-                        break;
-                    case CommandType.BlockUserResponse:
-                        await BlockUserHandleResponse(chatId, args, token);
-                        break;
-                    ///DeclineCurrentTask
-                    case CommandType.DeclineCurrentTask:
-                            await DeclineCurrentTask(chatId, token);
-                            break;
-                    ///SendUserNotImplemented
-                    default:
-                        await SendUserNotImplemented(chatId, token);
-                        break;
-                }
+            switch (commandType)
+            {
+                ///ViewDemands
+                case CommandType.ViewDemands:
+                    await ViewDemandsSendRequest(chatId, token);
+                    break;                    
+                ///AddSquaddie
+                case CommandType.AddSquaddie:
+                    await AddSquaddieSendRequest(chatId, token);
+                    break;
+                case CommandType.AddSquaddieResponse:
+                    await AddSquaddieHandleResponse(chatId, args, userId, token);
+                    break;
+                ///ViewUserRights
+                case CommandType.ViewUserRights:
+                    await ViewUserRightsSendRequest(chatId, token);
+                    break;
+                case CommandType.ViewUserRightsResponse:
+                    await ViewUserRightsHandleResponse(chatId, args, userId, token);
+                    break;
+                ///AddUserRights
+                case CommandType.AddUserRights:
+                    await AddUserRightsSendRequest(chatId, token);
+                    break;
+                case CommandType.AddUserRightsResponse:
+                    await AddUserRightsHandleResponse(chatId, args, userId, token);
+                    break;
+                ///DeleteUserRights
+                case CommandType.DeleteUserRights:
+                    await DeleteUserRightsSendRequest(chatId, token);
+                    break;
+                case CommandType.DeleteUserRightsResponse:
+                    await DeleteUserRightsHandleResponse(chatId, args, userId, token);
+                    break;
+                ///BlockUser
+                case CommandType.BlockUser:
+                    await BlockUserSendRequest(chatId, token);
+                    break;
+                case CommandType.BlockUserResponse:
+                    await BlockUserHandleResponse(chatId, args, userId, token);
+                    break;
+                ///BlockUser
+                case CommandType.UnBlockUser:
+                    await UnBlockUserSendRequest(chatId, token);
+                    break;
+                case CommandType.UnBlockUserResponse:
+                    await UnBlockUserHandleResponse(chatId, args, userId, token);
+                    break;
+                ///DeclineCurrentTask
+                case CommandType.DeclineCurrentTask:
+                    await DeclineCurrentTask(chatId, userId, token);
+                    break;
+                ///SendUserNotImplemented
+                default:
+                    await SendUserNotImplemented(chatId, token);
+                    break;
+            }
             return true;
         }
 
-        private async Task BlockUserHandleResponse(long chatId, string[] args, CancellationToken token)
+        private async Task UnBlockUserHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task UnBlockUserSendRequest(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task BlockUserHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
         {
             throw new NotImplementedException();
         }
 
         private async Task BlockUserSendRequest(long chatId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номера пользоавтелей или логины для блокировки", GetDeclineReplyMarkUp(), token);
         }
 
-        private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
+        private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
         {
             throw new NotImplementedException();
         }
@@ -290,7 +307,7 @@ namespace ROTGBot.Service
                 "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня)", GetDeclineReplyMarkUp(), token);
         }
 
-        private async Task DeclineCurrentTask(long chatId, CancellationToken token)
+        private async Task DeclineCurrentTask(long chatId, Guid userId, CancellationToken token)
         {
             throw new NotImplementedException();
         }
@@ -327,11 +344,6 @@ namespace ROTGBot.Service
         {
             var demands = await _userDataService.GetDemandUsers(token);
             await client.SendMessageAsync(chatId, $"Кандидаты на добавление в дружину:\r\n{string.Join("\r\n", demands.Select(s => $"{s.Number}. {s.Name} ({s.TGLogin})"))}", token);
-        }
-
-        private async Task AddSquaddieDecline(long chatId, string[] args, CancellationToken token)
-        {
-            throw new NotImplementedException();
         }
 
         private async Task AddSquaddieHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
@@ -380,7 +392,7 @@ namespace ROTGBot.Service
                 "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня) для добавления прав", GetDeclineReplyMarkUp(), token);
         }
 
-        private async Task AddUserRightsHandleResponse(long chatId, string[] args, CancellationToken token)
+        private async Task AddUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
         {
             var allRoles = Enum.GetNames<RoleEnum>();
             var allArgs = args.Select(s => s.Split(',', ';')).SelectMany(s => s).Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
@@ -396,14 +408,16 @@ namespace ROTGBot.Service
             var user = await _userDataService.GetUserByNumberOrLogin(userNumber, token);
             if(user == null)
             {
-                await client.SendMessageAsync(chatId, $"Пользователь {userNumber} не найден, задание отменено", GetDeclineReplyMarkUp(), token);
+                await client.SendMessageAsync(chatId, $"Пользователь {userNumber} не найден, задание отменено", token);
+                await _commandDataService.CloseCurrentCommand(userId, token);
                 return;
             }
 
-            var toAddRoles = allArgs.Where(s => allRoles.Contains(s, StringComparer.InvariantCultureIgnoreCase));
+            var toAddRoles = allArgs.Skip(1).Where(s => allRoles.Contains(s, StringComparer.InvariantCultureIgnoreCase));
             if(!toAddRoles.Any())
             {
-                await client.SendMessageAsync(chatId, $"Не отправлено ни одной роли, задание отменено", GetDeclineReplyMarkUp(), token);
+                await client.SendMessageAsync(chatId, $"Не отправлено ни одной роли, задание отменено", token);
+                await _commandDataService.CloseCurrentCommand(userId, token);
                 return;
             }
 
@@ -412,7 +426,8 @@ namespace ROTGBot.Service
 
             if (!toAddRoles.Any())
             {
-                await client.SendMessageAsync(chatId, $"Указанные роли уже присвоены пользователю, задание отменено", GetDeclineReplyMarkUp(), token);
+                await client.SendMessageAsync(chatId, $"Указанные роли уже присвоены пользователю, задание отменено", token);
+                await _commandDataService.CloseCurrentCommand(userId, token);
                 return;
             }
 
@@ -420,7 +435,8 @@ namespace ROTGBot.Service
             {
                 await _userDataService.SetRole(user.Id, Enum.Parse<RoleEnum>(role), token);
             }
-            await client.SendMessageAsync(chatId, $"Роли успешно присвоены пользователю, задание отменено", GetDeclineReplyMarkUp(), token);
+            await _commandDataService.CloseCurrentCommand(userId, token);
+            await client.SendMessageAsync(chatId, $"Роли успешно присвоены пользователю", token);
         }
 
         private static InlineKeyboardMarkup GetDeclineReplyMarkUp()
