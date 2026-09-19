@@ -97,6 +97,33 @@ namespace XUnitTests
             Assert.False(result);
         }
 
+        /// <summary>
+        /// 0.0.4.2.2
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task SwitchUserNotify_Repo_Error_Async()
+        {
+            var _repoMock = new Mock<IRepository<User>>();
+            var _repoRoleMock = new Mock<IRepository<Role>>();
+            var _repouserRoleMock = new Mock<IRepository<UserRole>>();
+
+            var userGuid = Guid.NewGuid();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Returns(() => GetUserError());
+
+            var userDataService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
+
+
+            await Assert.ThrowsAsync<RepositoryException>(() => userDataService.SwitchUserNotify(Guid.NewGuid(), new CancellationToken()));
+        }
+
+        private async Task<User> GetUserError()
+        {
+            throw new RepositoryException("Ошибка получения данных");
+        }
+
         private static List<Role> GetRoles(Filter<Role> f, Guid moderGuid, Guid userGuid)
         {
             var result = new List<Role>

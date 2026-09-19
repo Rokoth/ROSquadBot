@@ -210,5 +210,10 @@ namespace ROTGBot.Service
                 
             return await Map(user, token);
         }
+
+        public Task DeleteRole(Guid id, RoleEnum roleEnum, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

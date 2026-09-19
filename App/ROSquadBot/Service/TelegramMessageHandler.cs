@@ -296,11 +296,6 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номера пользоавтелей или логины для блокировки", GetDeclineReplyMarkUp(), token);
         }
 
-        private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
         private async Task DeleteUserRightsSendRequest(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и роль, которые ему надо удалить из списка: " +
@@ -390,6 +385,53 @@ namespace ROTGBot.Service
         {
             await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и права, которые ему надо добавить из списка: " +
                 "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня) для добавления прав", GetDeclineReplyMarkUp(), token);
+        }
+
+        private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
+        {
+            var allRoles = Enum.GetNames<RoleEnum>();
+            var allArgs = args.Select(s => s.Split(',', ';')).SelectMany(s => s).Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+
+            if (allArgs.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и права, которые ему надо удалить из списка: " +
+                    "squaddie (Дружинник), administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня) для добавления прав", GetDeclineReplyMarkUp(), token);
+                return;
+            }
+
+            var userNumber = allArgs[0];
+            var user = await _userDataService.GetUserByNumberOrLogin(userNumber, token);
+            if (user == null)
+            {
+                await client.SendMessageAsync(chatId, $"Пользователь {userNumber} не найден, задание отменено", token);
+                await _commandDataService.CloseCurrentCommand(userId, token);
+                return;
+            }
+
+            var toDeleteRoles = allArgs.Skip(1).Where(s => allRoles.Contains(s, StringComparer.InvariantCultureIgnoreCase));
+            if (!toDeleteRoles.Any())
+            {
+                await client.SendMessageAsync(chatId, $"Не отправлено ни одной роли, задание отменено", token);
+                await _commandDataService.CloseCurrentCommand(userId, token);
+                return;
+            }
+
+            var userRolesNames = user.Roles.Select(s => Enum.GetName(s));
+            toDeleteRoles = toDeleteRoles.Where(s => userRolesNames.Contains(s));
+
+            if (!toDeleteRoles.Any())
+            {
+                await client.SendMessageAsync(chatId, $"Указанные роли не присвоены пользователю, задание отменено", token);
+                await _commandDataService.CloseCurrentCommand(userId, token);
+                return;
+            }
+
+            foreach (var role in toDeleteRoles)
+            {
+                await _userDataService.DeleteRole(user.Id, Enum.Parse<RoleEnum>(role), token);
+            }
+            await _commandDataService.CloseCurrentCommand(userId, token);
+            await client.SendMessageAsync(chatId, $"Роли успешно удалены у пользователя", token);
         }
 
         private async Task AddUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
