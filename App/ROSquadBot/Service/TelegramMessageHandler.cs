@@ -286,10 +286,7 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task BlockUserHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task BlockUserSendRequest(long chatId, CancellationToken token)
         {
@@ -385,6 +382,36 @@ namespace ROTGBot.Service
         {
             await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номер дружинника и права, которые ему надо добавить из списка: " +
                 "administrator (Администратор), district_commander (Командир уровня района), city_commander (Командир городского уровня) для добавления прав", GetDeclineReplyMarkUp(), token);
+        }
+
+        private async Task BlockUserHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
+        {
+            List<string> result = new List<string>();
+            var prepared = args.SelectMany(s => s.Split(',', ';'));
+            foreach (var arg in args)
+            {
+                if(!string.IsNullOrEmpty(arg))
+                {
+                    var user = await _userDataService.GetUserByNumberOrLogin(arg, token);
+                    if(user==null)
+                    {
+                        await client.SendMessageAsync(chatId, $"Пользователь не найден {arg}", token);
+                        continue;
+                    }
+
+                    result.Add($"{user.Number}: {user.Name} ({user.TGLogin})");
+                    await _userDataService.BlockUser(user.Id, token);
+                }
+            }
+
+            if(!prepared.Any())
+            {
+                await client.SendMessageAsync(chatId, $"Не найдено ни одного пользователя по запросу", token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, $"Заблокированы пользователи:\r\n{string.Join("\r\n", result)}", token);
+            }
         }
 
         private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)

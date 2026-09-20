@@ -1,6 +1,7 @@
 ﻿using ROTGBot.Contract.Model;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
+using System.Data;
 using Telegram.BotAPI.AvailableTypes;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
@@ -211,9 +212,19 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        public Task DeleteRole(Guid id, RoleEnum roleEnum, CancellationToken token)
+        public async  Task DeleteRole(Guid userId, RoleEnum role, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var toDeleteRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
+
+            var toDeleteUserRole = await _userRoleRepo.GetAsync(new Filter<UserRole>() { Selector = s => s.RoleId == toDeleteRole.Id}, token);
+
+            if (toDeleteUserRole.Count == 0)
+                return;
+
+            foreach(var item in toDeleteUserRole)
+            {
+                await _userRoleRepo.DeleteAsync(item, true, token);
+            }
         }
     }
 }
