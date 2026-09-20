@@ -188,7 +188,7 @@ namespace ROTGBot.Service
                 {
                     return false;
                 }
-                dataReq = Enum.GetName((CommandType)command.CommandType) + "Response";
+                dataReq = Enum.GetName(command.CommandType) + "Response";
             }           
 
             if(!Enum.TryParse(dataReq, out CommandType commandType) || !await CheckRights(user, chatId, commandType, token))
@@ -412,6 +412,8 @@ namespace ROTGBot.Service
             {
                 await client.SendMessageAsync(chatId, $"Заблокированы пользователи:\r\n{string.Join("\r\n", result)}", token);
             }
+
+            await _commandDataService.CloseCurrentCommand(userId, token);
         }
 
         private async Task DeleteUserRightsHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)

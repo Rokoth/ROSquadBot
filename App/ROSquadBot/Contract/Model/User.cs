@@ -11,6 +11,8 @@ namespace ROTGBot.Contract.Model
         public long ChatId { get; set; }        
         public int Number { get; set; }
 
+        public bool IsBlocked { get; set; }
+
         public List<RoleEnum> Roles { get; set; } = [];
 
         public bool IsAdmin => Roles.Contains(RoleEnum.administrator);        

@@ -97,7 +97,8 @@ namespace ROTGBot.Service
             TGId = user.TGId,
             TGLogin = user.TGLogin,
             LastSendDate = user.LastSendDate,
-            Number = user.Number
+            Number = user.Number,
+            IsBlocked  = user.IsBlocked
         };
 
         private async Task<List<RoleEnum>> GetUserRoles(Db.Model.User user, CancellationToken cancellationToken)
@@ -225,6 +226,14 @@ namespace ROTGBot.Service
             {
                 await _userRoleRepo.DeleteAsync(item, true, token);
             }
+        }
+
+        public async Task<Contract.Model.User?> BlockUser(Guid userId, CancellationToken token)
+        {
+            var user = await _userRepo.GetAsync(userId, token);
+            user.IsBlocked = true;
+            var  result  =  await _userRepo.UpdateAsync(user, true, token);
+            return await Map(result, token);
         }
     }
 }
