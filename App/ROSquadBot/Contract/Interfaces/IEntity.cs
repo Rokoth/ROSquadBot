@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ROTGBot.Contract.Interfaces
+﻿namespace ROSquadBot.Contract.Interfaces
 {
     public interface IEntity
     {

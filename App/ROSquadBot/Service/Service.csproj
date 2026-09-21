@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Contract\ROSquadBot.Contract.csproj" />
     <ProjectReference Include="..\DB\ROSquadBot.DB.csproj" />
   </ItemGroup>
 
