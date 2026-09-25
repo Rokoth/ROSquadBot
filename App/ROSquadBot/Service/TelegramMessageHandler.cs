@@ -276,21 +276,20 @@ namespace ROTGBot.Service
             return true;
         }
 
-        private async Task UnBlockUserHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
+        
 
-        private async Task UnBlockUserSendRequest(long chatId, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         
 
         private async Task BlockUserSendRequest(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номера пользоавтелей или логины для блокировки", GetDeclineReplyMarkUp(), token);
+        }
+
+        private async Task UnBlockUserSendRequest(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Отправьте через запятую или точку с запятой номера пользоавтелей или логины для разблокировки", GetDeclineReplyMarkUp(), token);
         }
 
         private async Task DeleteUserRightsSendRequest(long chatId, CancellationToken token)
@@ -411,6 +410,38 @@ namespace ROTGBot.Service
             else
             {
                 await client.SendMessageAsync(chatId, $"Заблокированы пользователи:\r\n{string.Join("\r\n", result)}", token);
+            }
+
+            await _commandDataService.CloseCurrentCommand(userId, token);
+        }
+
+        private async Task UnBlockUserHandleResponse(long chatId, string[] args, Guid userId, CancellationToken token)
+        {
+            List<string> result = new List<string>();
+            var prepared = args.SelectMany(s => s.Split(',', ';'));
+            foreach (var arg in args)
+            {
+                if (!string.IsNullOrEmpty(arg))
+                {
+                    var user = await _userDataService.GetUserByNumberOrLogin(arg, token);
+                    if (user == null)
+                    {
+                        await client.SendMessageAsync(chatId, $"Пользователь не найден {arg}", token);
+                        continue;
+                    }
+
+                    result.Add($"{user.Number}: {user.Name} ({user.TGLogin})");
+                    await _userDataService.UnBlockUser(user.Id, token);
+                }
+            }
+
+            if (!prepared.Any())
+            {
+                await client.SendMessageAsync(chatId, $"Не найдено ни одного пользователя по запросу", token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, $"Разблокированы пользователи:\r\n{string.Join("\r\n", result)}", token);
             }
 
             await _commandDataService.CloseCurrentCommand(userId, token);

@@ -235,5 +235,13 @@ namespace ROTGBot.Service
             var  result  =  await _userRepo.UpdateAsync(user, true, token);
             return await Map(result, token);
         }
+
+        public async Task<Contract.Model.User?> UnBlockUser(Guid userId, CancellationToken token)
+        {
+            var user = await _userRepo.GetAsync(userId, token);
+            user.IsBlocked = false;
+            var result = await _userRepo.UpdateAsync(user, true, token);
+            return await Map(result, token);
+        }
     }
 }

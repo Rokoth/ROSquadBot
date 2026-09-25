@@ -14,5 +14,6 @@ namespace ROTGBot.Service
         Task<User?> GetUserByNumberOrLogin(string arg, CancellationToken token);
         Task DeleteRole(Guid id, RoleEnum roleEnum, CancellationToken token);
         Task<Contract.Model.User?> BlockUser(Guid userId, CancellationToken token);
+        Task<Contract.Model.User?> UnBlockUser(Guid userId, CancellationToken token);
     }
 }
