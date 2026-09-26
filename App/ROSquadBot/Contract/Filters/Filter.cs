@@ -1,4 +1,4 @@
-﻿using ROTGBot.Contract.Interfaces;
+﻿using ROSquadBot.Contract.Interfaces;
 using ROTGBot.Contract.Model;
 
 namespace ROTGBot.Contract.Filters

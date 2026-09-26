@@ -1,8 +1,11 @@
-﻿using ROTGBot.Contract.Filters;
-using ROTGBot.Contract.Model;
+﻿using ROTGBot.Contract.Model;
 
-namespace ROTGBot.Contract.Interfaces
+namespace ROSquadBot.Contract.Interfaces
 {
+    /// <summary>
+    /// интерфейс фильтра
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public interface IFilter<T> where T : Entity
     {
         /// <summary>
