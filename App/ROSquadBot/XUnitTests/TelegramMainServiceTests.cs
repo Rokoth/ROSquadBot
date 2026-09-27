@@ -18,6 +18,10 @@ namespace XUnitTests
             configuration = builder.Build();
         }
 
+        /// <summary>
+        /// 0.0.4.2.3
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task Execute_No_Updates_Async()
         {
@@ -35,5 +39,29 @@ namespace XUnitTests
 
             Assert.Equal(1, result);
         }
+
+        /// <summary>
+        /// 0.0.4.2.4
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task Execute_Exists_Updates_Async()
+        {
+            var handlerService = new Mock<ITelegramMessageHandler>();
+            var wrapperService = new Mock<ITelegramBotWrapper>();
+            handlerService.Setup(s => s.HandleUpdates(It.IsAny<IEnumerable<Update>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult(GetUpdates()));
+
+            var tgMainService = new TelegramMainService(handlerService.Object, wrapperService.Object);
+
+            var result = await tgMainService.Execute(1);
+
+            Assert.Equal(13, result);
+        }
+
+        private static IEnumerable<Update> GetUpdates()  => [new() { UpdateId = 12 }];
     }
 }
