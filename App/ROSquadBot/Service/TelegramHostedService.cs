@@ -22,22 +22,30 @@ namespace ROTGBot.Service
 
         public async Task Run(CancellationToken _cancellationToken)
         {
-            using var scope = _serviceProvider.CreateScope();
-            var scopeProvider = scope.ServiceProvider;
-            var _mainService = scopeProvider.GetRequiredService<ITelegramMainService>();
-            await _mainService.SetCommands();
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var scopeProvider = scope.ServiceProvider;
+                var _mainService = scopeProvider.GetRequiredService<ITelegramMainService>();
+                await _mainService.SetCommands();
 
-            while (isRunning && !_cancellationToken.IsCancellationRequested)
-            {     
-                try
-                {                                        
-                    offset = await _mainService.Execute(offset);
-                }
-                catch (Exception ex)
+                while (isRunning && !_cancellationToken.IsCancellationRequested)
                 {
-                    _logger.LogError("Error in TelegramHostedService: Run: {Message} {StackTrace}", ex.Message, ex.StackTrace);
+                    try
+                    {
+                        offset = await _mainService.Execute(offset);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Error in TelegramHostedService: Run: {Message} {StackTrace}", ex.Message, ex.StackTrace);
+                    }
+                    await Task.Delay(1000, _cancellationToken);
                 }
-                await Task.Delay(1000, _cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error in TelegramHostedService: Run: {Message} {StackTrace}", ex.Message, ex.StackTrace);
+                throw;
             }
         }
 
