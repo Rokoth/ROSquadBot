@@ -19,6 +19,10 @@ namespace XUnitTests
             configuration = builder.Build();
         }
 
+        /// <summary>
+        /// 0.0.4.2.3
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task Execute_No_Updates_Async()
         {
@@ -61,6 +65,10 @@ namespace XUnitTests
             Assert.True(result);
         }
 
+        /// <summary>
+        /// 0.0.4.2.4
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task Execute_Exists_Updates_Async()
         {
