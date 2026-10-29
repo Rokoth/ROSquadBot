@@ -1,6 +1,7 @@
 ﻿using Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using ROSquadBot.Contract.Model;
 using ROTGBot.Contract.Model;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
