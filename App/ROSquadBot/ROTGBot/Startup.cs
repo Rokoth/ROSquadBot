@@ -65,7 +65,9 @@ namespace ROTGBot
 
             services.AddScoped<IRepository<Db.Model.User>, Repository<Db.Model.User>>();                        
             services.AddScoped<IRepository<Db.Model.Role>, Repository<Db.Model.Role>>();
-            services.AddScoped<IRepository<Db.Model.UserRole>, Repository<Db.Model.UserRole>>();            
+            services.AddScoped<IRepository<Db.Model.UserRole>, Repository<Db.Model.UserRole>>();
+            services.AddScoped<IRepository<Db.Model.Command>, Repository<Db.Model.Command>>();
+            services.AddScoped<IRepository<Db.Model.CommandData>, Repository<Db.Model.CommandData>>();
 
             services.AddDataServices();           
 

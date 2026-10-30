@@ -52,7 +52,7 @@ namespace ROTGBot.Service
 
         private async Task<T> Execute<T>(Func<TelegramBotClient, Task<T>> execFunc)
         {
-            telegramBot ??= new TelegramBotClient(botToken);
+            telegramBot ??= CreateTelegramBot();
 
             try
             {
