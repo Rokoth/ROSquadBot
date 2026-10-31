@@ -85,7 +85,7 @@ namespace ROTGBot.Service
             return roles;
         }
 
-        public async Task SetRole(string login, RoleEnum role, CancellationToken token)
+        public async Task<bool> SetRole(string login, RoleEnum role, CancellationToken token)
         {
             var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
@@ -103,7 +103,9 @@ namespace ROTGBot.Service
                     RoleId = newRole.Id,
                     UserId = user.Id
                 }, true, token);
+                return true;
             }
+            return false;
         }
 
         public async Task<bool> SwitchUserNotify(Guid userId, CancellationToken token)

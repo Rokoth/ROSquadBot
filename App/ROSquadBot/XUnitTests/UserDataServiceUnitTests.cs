@@ -69,6 +69,75 @@ namespace XUnitTests
             _repoMock.Verify(m => m.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// 0.0.8.2.1
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task SetRole_Success_Async()
+        {
+            var _repoMock = new Mock<IRepository<User>>();
+            var _repoRoleMock = new Mock<IRepository<Role>>();
+            var _repouserRoleMock = new Mock<IRepository<UserRole>>();
+
+            var user1Id = Guid.NewGuid();
+
+            var moderGuid = Guid.NewGuid();
+            var userGuid = Guid.NewGuid();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<User>()
+                {
+                    new()
+                    {
+                        Id = user1Id,
+                        IsDeleted = false,
+                        IsNotify = true,
+                        ChatId = 1
+                    }
+                }));
+
+            _repouserRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<UserRole>>(), It.IsAny<CancellationToken>()))
+                .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new List<UserRole>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        IsDeleted = false,
+                        RoleId = userGuid,
+                        UserId = user1Id
+                    }
+                }));
+
+            _repouserRoleMock.Setup(s => s.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new UserRole()
+                {
+                    Id = Guid.NewGuid(),
+                    IsDeleted = false,
+                    RoleId = userGuid,
+                    UserId = user1Id
+                }));
+
+            _repoRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<Role>>(), It.IsAny<CancellationToken>()))
+                .Returns<Filter<Role>, CancellationToken>((f, t) => Task.FromResult(new List<Role>
+            {               
+                new()
+                {
+                    Id = userGuid,
+                    IsDeleted = false,
+                    Name = "user"
+                }
+            }));
+
+            var userService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
+
+            var result = await userService.SetRole("test", ROTGBot.Contract.Model.RoleEnum.user, new CancellationToken());
+
+            Assert.True(result);
+
+            _repouserRoleMock.Verify(s => s.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),Times.Once);
+        }
+
         private static List<Role> GetRoles(Filter<Role> f, Guid moderGuid, Guid userGuid)
         {
             var result = new List<Role>
