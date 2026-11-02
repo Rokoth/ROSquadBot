@@ -18,6 +18,10 @@ namespace XUnitTests
             configuration = builder.Build();
         }
 
+        /// <summary>
+        /// 0.0.10.2.1
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task Execute_No_Updates_Async()
         {
