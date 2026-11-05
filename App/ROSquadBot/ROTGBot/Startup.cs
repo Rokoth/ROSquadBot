@@ -51,16 +51,23 @@ namespace ROTGBot
                         // валидация ключа безопасности
                         ValidateIssuerSigningKey = true,
                     };
+                }).AddCookie("Cookies", options => {
+                    options.LoginPath = new PathString("/Account/Login");
+                    options.LogoutPath = new PathString("/Account/Logout");
                 });
 
             services.AddAuthorization(options =>
             {
-                var defPolicy = new AuthorizationPolicyBuilder()
+                var cookiePolicy = new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .AddAuthenticationSchemes("Cookies")
+                        .Build();
+                options.AddPolicy("Cookie", cookiePolicy);
+                options.AddPolicy("Token", new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
                     .AddAuthenticationSchemes("Token")
-                    .Build();
-                options.AddPolicy("Token", defPolicy);
-                options.DefaultPolicy = defPolicy;
+                    .Build());
+                options.DefaultPolicy = cookiePolicy;
             });
 
             services.AddScoped<IRepository<Db.Model.User>, Repository<Db.Model.User>>();                        
@@ -128,11 +135,16 @@ namespace ROTGBot
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
             });
 
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapControllerRoute(
+            //        name: "default",
+            //        pattern: "{controller=Home}/{action=Index}/{id?}");
+            //});
+
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
