@@ -16,5 +16,22 @@ namespace ROTGBot.Contract.Model
 
         public DateTime LastSendDate { get; set; }
     }
+        
+    public class TaskSettings
+    {       
+        public int Id { get; set; }
+       
+        public TaskSettingsCode Code { get; set; }
+        
+        public string ParamName { get; set; } = "";
+        
+        public string ParamValue { get; set; } = "";
+    }
+
+    public enum TaskSettingsCode
+    {
+        ShowResults=1,
+        ShowStrictResults=2,
+    }
 
 }
